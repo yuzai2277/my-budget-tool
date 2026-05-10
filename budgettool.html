@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人财务分配计算器</title>
+    <!-- 引入图表库 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #4F81BD;
+            --bg-color: #f4f7f9;
+        }
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 450px;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 1.5rem;
+        }
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            border-color: var(--primary-color);
+        }
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        .result-table th, .result-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        .result-table th {
+            color: #777;
+            font-weight: normal;
+        }
+        .amount {
+            font-weight: bold;
+            color: var(--primary-color);
+            text-align: right;
+            font-size: 1.1rem;
+        }
+        .invest-row {
+            background-color: #f0f7f0;
+        }
+        .chart-container {
+            margin-top: 1.5rem;
+            height: 220px;
+        }
+        .footer-note {
+            font-size: 0.75rem;
+            color: #aaa;
+            text-align: center;
+            margin-top: 1.2rem;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>💰 财务分配计算器</h2>
+    
+    <div class="input-group">
+        <label for="salary">输入本月实发工资 (元)</label>
+        <input type="number" id="salary" value="4346" oninput="calculate()">
+    </div>
+
+    <table class="result-table">
+        <tr>
+            <th>生活开销 (60%)</th>
+            <td id="life" class="amount">0</td>
+        </tr>
+        <tr>
+            <th>存款储蓄 (15%)</th>
+            <td id="savings" class="amount">0</td>
+        </tr>
+        <tr>
+            <th>娱乐消费 (10%)</th>
+            <td id="fun" class="amount">0</td>
+        </tr>
+        <tr class="invest-row">
+            <th>投资理财 (余项)</th>
+            <td id="invest" class="amount" style="color: #2e7d32;">0</td>
+        </tr>
+    </table>
+
+    <div class="chart-container">
+        <canvas id="myChart"></canvas>
+    </div>
+
+    <p class="footer-note">
+        逻辑：前三项向下取整，所有零头自动并入投资项。<br>
+        代码已适配 GitHub Pages。
+    </p>
+</div>
+
+<script>
+    let myChart;
+
+    function calculate() {
+        const salary = parseFloat(document.getElementById('salary').value) || 0;
+        
+        // 执行你的分配逻辑：前三项取整
+        const life = Math.floor(salary * 0.60);
+        const savings = Math.floor(salary * 0.15);
+        const fun = Math.floor(salary * 0.10);
+        
+        // 剩下的全部给投资
+        const invest = Math.max(0, salary - (life + savings + fun));
+
+        // 更新数字显示
+        document.getElementById('life').innerText = '¥' + life.toLocaleString();
+        document.getElementById('savings').innerText = '¥' + savings.toLocaleString();
+        document.getElementById('fun').innerText = '¥' + fun.toLocaleString();
+        document.getElementById('invest').innerText = '¥' + invest.toLocaleString();
+
+        updateChart(life, savings, fun, invest);
+    }
+
+    function updateChart(l, s, f, i) {
+        const ctx = document.getElementById('myChart').getContext('2d');
+        
+        if (myChart) {
+            myChart.destroy();
+        }
+
+        if (l+s+f+i === 0) return;
+
+        myChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['生活', '存款', '娱乐', '投资'],
+                datasets: [{
+                    data: [l, s, f, i],
+                    backgroundColor: ['#4F81BD', '#9BBB59', '#C0504D', '#2e7d32'],
+                    hoverOffset: 4,
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { boxWidth: 12 }
+                    }
+                }
+            }
+        });
+    }
+
+    // 页面加载时自动运行一次
+    window.onload = calculate;
+</script>
+
+</body>
+</html>
