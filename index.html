@@ -3,191 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>个人财务分配计算器</title>
-    <!-- 引入图表库 -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>我的私密账本</title>
     <style>
-        :root {
-            --primary-color: #4F81BD;
-            --bg-color: #f4f7f9;
-        }
-        body {
-            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
-            background-color: var(--bg-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-        }
-        .container {
-            background: white;
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 450px;
-        }
-        h2 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 1.5rem;
-        }
-        .input-group {
-            margin-bottom: 1.5rem;
-        }
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: #666;
-            font-size: 0.9rem;
-        }
-        input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 1.1rem;
-            box-sizing: border-box;
-            outline: none;
-            transition: border-color 0.3s;
-        }
-        input:focus {
-            border-color: var(--primary-color);
-        }
-        .result-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
-        .result-table th, .result-table td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-        }
-        .result-table th {
-            color: #777;
-            font-weight: normal;
-        }
-        .amount {
-            font-weight: bold;
-            color: var(--primary-color);
-            text-align: right;
-            font-size: 1.1rem;
-        }
-        .invest-row {
-            background-color: #f0f7f0;
-        }
-        .chart-container {
-            margin-top: 1.5rem;
-            height: 220px;
-        }
-        .footer-note {
-            font-size: 0.75rem;
-            color: #aaa;
-            text-align: center;
-            margin-top: 1.2rem;
-            line-height: 1.4;
-        }
+        :root { --primary: #4F81BD; --bg: #f0f2f5; --success: #2e7d32; --danger: #c0504d; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 15px; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        h2, h3 { margin-top: 0; color: #333; text-align: center; }
+        .budget-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .budget-item { padding: 10px; border-radius: 8px; background: #f8f9fa; border-left: 4px solid var(--primary); }
+        .budget-item span { display: block; font-size: 0.8rem; color: #666; }
+        .budget-item b { font-size: 1.1rem; color: var(--primary); }
+        
+        input, select, button { width: 100%; padding: 12px; margin-top: 8px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
+        button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 15px; }
+        button:active { opacity: 0.8; }
+        
+        .history { list-style: none; padding: 0; }
+        .history-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+        .history-item .tag { font-size: 0.7rem; background: #eee; padding: 2px 6px; border-radius: 4px; margin-right: 5px; }
+        .delete-btn { color: var(--danger); font-size: 0.8rem; cursor: pointer; border: none; background: none; width: auto; padding: 0; margin: 0; }
+        .clear-btn { background: #666; font-size: 0.8rem; padding: 8px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>💰 财务分配计算器</h2>
-    
-    <div class="input-group">
-        <label for="salary">输入本月实发工资 (元)</label>
-        <input type="number" id="salary" value="4346" oninput="calculate()">
+<div class="card">
+    <h2>💰 每月预算余量</h2>
+    <div class="budget-grid">
+        <div class="budget-item"><span>生活 (限2600)</span>剩 <b id="rem-life">0</b></div>
+        <div class="budget-item"><span>存款 (限650)</span>剩 <b id="rem-save">0</b></div>
+        <div class="budget-item"><span>娱乐 (限430)</span>剩 <b id="rem-fun">0</b></div>
+        <div class="budget-item" style="border-left-color: var(--success)"><span>投资 (限666)</span>剩 <b id="rem-invest">0</b></div>
     </div>
+</div>
 
-    <table class="result-table">
-        <tr>
-            <th>生活开销 (60%)</th>
-            <td id="life" class="amount">0</td>
-        </tr>
-        <tr>
-            <th>存款储蓄 (15%)</th>
-            <td id="savings" class="amount">0</td>
-        </tr>
-        <tr>
-            <th>娱乐消费 (10%)</th>
-            <td id="fun" class="amount">0</td>
-        </tr>
-        <tr class="invest-row">
-            <th>投资理财 (余项)</th>
-            <td id="invest" class="amount" style="color: #2e7d32;">0</td>
-        </tr>
-    </table>
+<div class="card">
+    <h3>📝 新增记账</h3>
+    <input type="number" id="amount" placeholder="金额 (元)" inputmode="decimal">
+    <input type="text" id="note" placeholder="备注 (如：买午饭)">
+    <select id="category">
+        <option value="life">生活开销</option>
+        <option value="save">存款储蓄</option>
+        <option value="fun">娱乐消费</option>
+        <option value="invest">投资理财</option>
+    </select>
+    <button onclick="addRecord()">记录一笔</button>
+</div>
 
-    <div class="chart-container">
-        <canvas id="myChart"></canvas>
-    </div>
-
-    <p class="footer-note">
-        逻辑：前三项向下取整，所有零头自动并入投资项。<br>
-        代码已适配 GitHub Pages。
-    </p>
+<div class="card">
+    <h3>📜 最近记录</h3>
+    <ul id="historyList" class="history"></ul>
+    <button class="clear-btn" onclick="clearAll()">清空所有记录</button>
 </div>
 
 <script>
-    let myChart;
+    // 初始预算设定 (月薪 4346)
+    const BUDGET = { life: 2600, save: 650, fun: 430, invest: 666 };
+    let records = JSON.parse(localStorage.getItem('myRecords')) || [];
 
-    function calculate() {
-        const salary = parseFloat(document.getElementById('salary').value) || 0;
+    function updateUI() {
+        const historyList = document.getElementById('historyList');
+        historyList.innerHTML = '';
         
-        // 执行你的分配逻辑：前三项取整
-        const life = Math.floor(salary * 0.60);
-        const savings = Math.floor(salary * 0.15);
-        const fun = Math.floor(salary * 0.10);
+        let spent = { life: 0, save: 0, fun: 0, invest: 0 };
         
-        // 剩下的全部给投资
-        const invest = Math.max(0, salary - (life + savings + fun));
-
-        // 更新数字显示
-        document.getElementById('life').innerText = '¥' + life.toLocaleString();
-        document.getElementById('savings').innerText = '¥' + savings.toLocaleString();
-        document.getElementById('fun').innerText = '¥' + fun.toLocaleString();
-        document.getElementById('invest').innerText = '¥' + invest.toLocaleString();
-
-        updateChart(life, savings, fun, invest);
-    }
-
-    function updateChart(l, s, f, i) {
-        const ctx = document.getElementById('myChart').getContext('2d');
-        
-        if (myChart) {
-            myChart.destroy();
-        }
-
-        if (l+s+f+i === 0) return;
-
-        myChart = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: ['生活', '存款', '娱乐', '投资'],
-                datasets: [{
-                    data: [l, s, f, i],
-                    backgroundColor: ['#4F81BD', '#9BBB59', '#C0504D', '#2e7d32'],
-                    hoverOffset: 4,
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { boxWidth: 12 }
-                    }
-                }
-            }
+        records.forEach((re, index) => {
+            spent[re.category] += parseFloat(re.amount);
+            
+            const li = document.createElement('li');
+            li.className = 'history-item';
+            li.innerHTML = `
+                <div><span class="tag">${translate(re.category)}</span> ${re.note}</div>
+                <div>-￥${re.amount} <button class="delete-btn" onclick="deleteRecord(${index})">删除</button></div>
+            `;
+            historyList.prepend(li);
         });
+
+        // 更新余额
+        for (let key in BUDGET) {
+            const rem = BUDGET[key] - spent[key];
+            const el = document.getElementById('rem-' + key);
+            el.innerText = '￥' + rem.toLocaleString();
+            el.style.color = rem < 0 ? 'var(--danger)' : (key === 'invest' ? 'var(--success)' : 'var(--primary)');
+        }
+        
+        localStorage.setItem('myRecords', JSON.stringify(records));
     }
 
-    // 页面加载时自动运行一次
-    window.onload = calculate;
+    function addRecord() {
+        const amount = document.getElementById('amount').value;
+        const note = document.getElementById('note').value || '无备注';
+        const category = document.getElementById('category').value;
+
+        if (!amount || amount <= 0) return alert('请输入正确金额');
+
+        records.push({ amount, note, category, time: new Date().getTime() });
+        document.getElementById('amount').value = '';
+        document.getElementById('note').value = '';
+        updateUI();
+    }
+
+    function deleteRecord(index) {
+        if(confirm('确定删除这笔记录吗？')) {
+            records.splice(index, 1);
+            updateUI();
+        }
+    }
+
+    function clearAll() {
+        if(confirm('确定要清空所有账目吗？此操作不可撤销。')) {
+            records = [];
+            updateUI();
+        }
+    }
+
+    function translate(cat) {
+        const map = { life: '生活', save: '存款', fun: '娱乐', invest: '投资' };
+        return map[cat];
+    }
+
+    // 页面加载时刷新
+    window.onload = updateUI;
 </script>
 
 </body>
